@@ -1,0 +1,129 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
+class TaxiwayGraph:
+    def __init__(self, vertices, edges):
+        self.edges = edges
+        self.vertices = vertices
+        self.G = nx.Graph()
+        self.G.add_nodes_from(vertices)
+        for u, v, weight in edges:
+            self.G.add_edge(u, v, weight=weight)
+            # self.G.add_edge(u, v, tdg=tdg, name=f"Taxiway {u}-{v}")
+
+    def directed_expanded_graph(self):
+        D = nx.DiGraph()
+        # Add "v in" vertices to D for each vertex v in G
+        for v in self.G.nodes():
+            D.add_node(f"{v} in")
+
+        # Add "u from v" vertices to D for each connected vertex pair (u, v) in G
+        for u in self.G.nodes():
+            for v in self.G.neighbors(u):
+                D.add_node(f"{u} from {v}")
+
+        # Add directed edges to D based on the original edges in G
+        for u, v, attr in self.G.edges(data=True):
+            taxiway_name = attr.get('name', '')
+
+            for w in self.G.neighbors(u):
+                if w != v:
+                    D.add_edge(f"{u} in", f"{v} from {u}", name=taxiway_name)
+
+            for w in self.G.neighbors(v):
+                if w != u:
+                    D.add_edge(f"{v} in", f"{u} from {v}", name=taxiway_name)
+        return D
+
+    def visualize_graph(self, D):
+        plt.figure(figsize=(12, 8))
+        pos = nx.spring_layout(D, seed=0)
+        nx.draw(D, pos, with_labels=True, node_size=5000, node_color='lightblue', edge_color='gray', font_size=10)
+        edge_labels = nx.get_edge_attributes(D, 'name')
+        nx.draw_networkx_edge_labels(D, pos, edge_labels=edge_labels)
+        plt.title("Directed Expanded Graph")
+        plt.show()
+    
+    def print_graph(self, D):
+        print("Nodes of D:")
+        print(D.nodes(data=True))
+        print("\nEdges of D:")
+        print(D.edges(data=True))
+
+    def find_shortest_path_flight(self, start_vertex, end_vertex):
+        return nx.dijkstra_path(self.G, start_vertex, end_vertex, weight='weight')
+
+    def create_and_visualize_graph_2(self, vertices, edges, start, finish, shortest_path_flight):
+        G = nx.DiGraph()
+        G.add_nodes_from(vertices)
+        G.add_weighted_edges_from(edges)
+
+        pos = {'Gate 1': (0, 0), 'Gate 2': (1, 0), 'Gate 3': (2, 0), 'Gate 4': (3, 0), 'Gate 5': (4, 0), 'Gate 6': (5, 0), 'Gate 7': (6, 0), 'Gate 8': (7, 0),
+               'CC4': (0, 1), 'CC3': (1, 1), 'CC2': (2, 1), 'CC1': (3, 1), 'ED': (4, 1), 'DB': (5, 1), 'CB': (6, 1), 'AB2': (7, 1), 'GH': (8, 1), 
+               'ZX': (0, 2), 'BB5': (1, 2), 'BB4': (2, 2), 'BB3': (3, 2), 'NM': (4, 2), 'AA': (5, 2), 
+               'R10L': (0, 3), 'R10S': (1, 3), 'R28L': (2, 3), 'R28S': (3, 3), 'R5L': (4, 3), 'R5S': (5, 3), 'R23': (6, 3)}
+
+        elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] > 5]
+        esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] <= 5]
+
+        plt.figure(figsize=(12, 8))
+        nx.draw_networkx_nodes(G, pos, node_size=200)
+        nx.draw_networkx_edges(G, pos, edgelist=elarge, width=2)
+        nx.draw_networkx_edges(G, pos, edgelist=esmall, width=2, alpha=0.5, edge_color="b", style="solid")
+        nx.draw_networkx_labels(G, pos, font_size=5, font_family="sans-serif")
+
+        edge_labels = {(u, v): f"{d['weight']}" for u, v, d in G.edges(data=True)}
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+
+        # Draw the shortest path nodes and edges
+        path_nodes = shortest_path_flight
+        path_edges = list(zip(shortest_path_flight, shortest_path_flight[1:]))
+
+        nx.draw_networkx_nodes(G, pos, nodelist=path_nodes, node_color='r')
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, width=2, edge_color="r", style="solid")
+
+
+        plt.title(f"Shortest Path from {start} to {finish}")
+        plt.show()
+
+# Define vertices and edges for the first graph
+vertices1 = ['Gate 1', 'Gate 2', 'Gate 3', 'Gate 4', 'Gate 5', 'Gate 6', 'Gate 7', 'Gate 8',
+            'R10L', 'R10S', 'R28L', 'R28S', 'R5L', 'R5S', 'R23',
+            'CC4', 'CC3', 'CC2', 'CC1', 'BB5', 'BB4', 'ED', 'DB', 'CB', 'BB3', 'AB2', 'AA']
+
+edges1 = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10L', 'R10S', 1), ('CC3', 'CC2', 2),
+         ('CC2', 'CC1', 2), ('Gate 1', 'CC1', 2), ('CC1', 'CB', 2),
+         ('BB4', 'BB5', 1), ('BB5', 'R5L', 1), ('BB4', 'CB', 3), ('BB4', 'R5S', 1), ('R5L', 'R5S', 1), 
+         ('CB', 'BB3', 1), ('CB', 'DB', 1), ('NM', 'BB3', 1), ('AA', 'R28L', 1), ('AA', 'R28S', 1), ('R28L', 'R28S', 1),
+         ('AA', 'AB2', 3), ('Gate 6', 'AB2', 1), ('Gate 7', 'AB2', 1), ('Gate 8', 'R23', 1), ('R23', 'BB3', 5),
+         ('Gate 5', 'DB', 2), ('Gate 2', 'ED', 1), ('Gate 3', 'ED', 1), ('Gate 4', 'ED', 1), ('ED', 'DB', 2), ('BB3', 'AB2', 3),
+         ('R23', 'AB2', 2)]
+
+# Define vertices and edges for the second graph
+vertices = ['Gate 1', 'Gate 2', 'Gate 3', 'Gate 4', 'Gate 5', 'Gate 6', 'Gate 7', 'Gate 8',
+            'R10L', 'R10S', 'R28L', 'R28S', 'R5L', 'R5S', 'R23',
+            'CC4', 'CC3', 'CC2', 'CC1', 'BB5', 'BB4', 'ED', 'DB', 'CB', 'BB3', 'AB2', 'AA']
+
+edges = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10S', 'R10L', 1), ('CC3', 'CC2', 2),
+         ('CC2', 'CC1', 2), ('Gate 1', 'CC1', 2), ('CC1', 'CB', 2),
+         ('BB4', 'BB5', 1), ('BB5', 'R5L', 1), ('BB4', 'CB', 3), ('BB4', 'R5S', 1), ('R5L', 'R5S', 1), 
+         ('CB', 'BB3', 1), ('CB', 'DB', 1), ('NM', 'BB3', 1), ('AA', 'R28L', 1), ('AA', 'R28S', 1), ('R28L', 'R28S', 1),
+         ('AA', 'AB2', 3), ('Gate 6', 'AB2', 1), ('Gate 7', 'AB2', 1), ('Gate 8', 'R23', 1), ('R23', 'BB3', 5),
+         ('Gate 5', 'DB', 2), ('Gate 2', 'ED', 1), ('Gate 3', 'ED', 1), ('Gate 4', 'ED', 1), ('ED', 'DB', 2), ('BB3', 'AB2', 3),
+         ('R23', 'AB2', 2)]
+
+start_gate = str(input("Enter the starting gate: "))
+end_runway = str(input("Enter the runway: "))
+
+# Create the TaxiwayGraph object
+taxiway_graph = TaxiwayGraph(vertices1, edges1)
+D = taxiway_graph.directed_expanded_graph()
+# taxiway_graph.print_graph(D)
+taxiway_graph.visualize_graph(D)
+
+
+# Find the shortest path from the starting gate to the runway
+shortest_path_flight = taxiway_graph.find_shortest_path_flight(start_gate, end_runway)
+print(f"The shortest path from {start_gate} to {end_runway} is: {shortest_path_flight}")
+
+taxiway_graph.create_and_visualize_graph_2(vertices, edges, start_gate, end_runway, shortest_path_flight)
