@@ -1,4 +1,6 @@
+
 import networkx as nx
+import numpy as np
 import matplotlib.pyplot as plt
 
 class TaxiwayGraph:
@@ -44,14 +46,78 @@ class TaxiwayGraph:
         plt.title("Directed Expanded Graph")
         plt.show()
     
-    def print_graph(self, D):
-        print("Nodes of D:")
-        print(D.nodes(data=True))
-        print("\nEdges of D:")
-        print(D.edges(data=True))
+    def undirected_graph(self, vertices, edges):
+        G = nx.Graph()
+        G.add_nodes_from(vertices)
+        G.add_weighted_edges_from(edges)
+
+        pos = {'Gate 1': (0, 0), 'Gate 2': (1, 0), 'Gate 3': (2, 0), 'Gate 4': (3, 0), 'Gate 5': (4, 0), 'Gate 6': (5, 0), 'Gate 7': (6, 0), 'Gate 8': (7, 0),
+                'CC4': (0, 1), 'CC3': (1, 1), 'CC2': (2, 1), 'CC1': (3, 1), 'ED': (4, 1), 'DB': (5, 1), 'CB': (6, 1), 'AB2': (7, 1), 
+                'BB5': (1, 2), 'BB4': (2, 2), 'BB3': (3, 2), 'AA': (5, 2), 
+                'R10L': (0, 3), 'R10S': (1, 3), 'R28L': (2, 3), 'R28S': (3, 3), 'R5L': (4, 3), 'R5S': (5, 3), 'R23': (6, 3)}
+
+        # Draw the graph
+        elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] > 5]
+        esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] <= 5]
+
+        # nodes and edges
+        plt.figure(figsize=(12, 8))
+        nx.draw_networkx_nodes(G, pos, node_size=200)
+        nx.draw_networkx_edges(G, pos, edgelist=elarge, width=2)
+        nx.draw_networkx_edges(G, pos, edgelist=esmall, width=2, alpha=0.5, edge_color="b", style="solid")
+        nx.draw_networkx_labels(G, pos, font_size=5, font_family="sans-serif")   # node labels
+
+        edge_labels = {(u, v): f"{d['weight']}" for u, v, d in G.edges(data=True)}  # edge weight labels
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+        plt.title("Undirected Graph")
+        plt.show()
+
+    def cardinal_spline(self, points, num_points=100, tension=0.5):
+        def basis_function(t, tension):
+            t2 = t * t
+            t3 = t2 * t
+            return ((2*t3 - 3*t2 + 1), (-2*t3 + 3*t2), (t3 - 2*t2 + t), (t3 - t2))
+        n = len(points) - 1
+        curve = []
+
+        for i in range(n):
+            p0 = points[i - 1] if i - 1 >= 0 else points[i]
+            p1 = points[i]
+            p2 = points[i + 1] if i + 1 <= n else points[i]
+            p3 = points[i + 2] if i + 2 <= n else points[i + 1]
+
+            for j in range(num_points):
+                t = j / num_points
+                b0, b1, b2, b3 = basis_function(t, tension)
+                x = (b0 * p1[0] + b1 * p2[0] + tension * (b2 * (p2[0] - p0[0]) + b3 * (p3[0] - p1[0])))
+                y = (b0 * p1[1] + b1 * p2[1] + tension * (b2 * (p2[1] - p0[1]) + b3 * (p3[1] - p1[1])))
+                curve.append((x, y))
+        return np.array(curve)
+
+
+    def visualize_cardinal_spline(self, points, tension=0.5):
+        spline_curve = self.cardinal_spline(points, tension=tension)
+        plt.figure(figsize=(12, 8))
+        # Plot control points
+        plt.plot(points[:, 0], points[:, 1], 'ro-', label='Waypoints')
+
+        # Plot spline curve
+        plt.plot(spline_curve[:, 0], spline_curve[:, 1], 'b-', label='Cardinal Spline')
+        plt.legend()
+        plt.title(f'Cardinal Spline Interpolation with Tension = {tension}')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.show()
 
     def find_shortest_path_flight(self, start_vertex, end_vertex):
-        return nx.dijkstra_path(self.G, start_vertex, end_vertex, weight='weight')
+        pos = {'Gate 1': (0, 0), 'Gate 2': (1, 0), 'Gate 3': (2, 0), 'Gate 4': (3, 0), 'Gate 5': (4, 0), 'Gate 6': (5, 0), 'Gate 7': (6, 0), 'Gate 8': (7, 0),
+                'CC4': (0, 1), 'CC3': (1, 1), 'CC2': (2, 1), 'CC1': (3, 1), 'ED': (4, 1), 'DB': (5, 1), 'CB': (6, 1), 'AB2': (7, 1), 'BB5': (1, 2), 'BB4': (2, 2), 
+                'BB3': (3, 2), 'AA': (5, 2), 'R10L': (0, 3), 'R10S': (1, 3), 'R28L': (2, 3), 'R28S': (3, 3), 'R5L': (4, 3), 'R5S': (5, 3), 'R23': (6, 3)}
+        distance = nx.dijkstra_path(self.G, start_vertex, end_vertex, weight='weight')
+        control_points = []
+        for i in range(len(distance)):
+            control_points.append(pos[distance[i]])
+        return distance, control_points
 
     def create_and_visualize_graph_2(self, vertices, edges, start, finish, shortest_path_flight):
         G = nx.DiGraph()
@@ -59,9 +125,8 @@ class TaxiwayGraph:
         G.add_weighted_edges_from(edges)
 
         pos = {'Gate 1': (0, 0), 'Gate 2': (1, 0), 'Gate 3': (2, 0), 'Gate 4': (3, 0), 'Gate 5': (4, 0), 'Gate 6': (5, 0), 'Gate 7': (6, 0), 'Gate 8': (7, 0),
-               'CC4': (0, 1), 'CC3': (1, 1), 'CC2': (2, 1), 'CC1': (3, 1), 'ED': (4, 1), 'DB': (5, 1), 'CB': (6, 1), 'AB2': (7, 1), 'GH': (8, 1), 
-               'ZX': (0, 2), 'BB5': (1, 2), 'BB4': (2, 2), 'BB3': (3, 2), 'NM': (4, 2), 'AA': (5, 2), 
-               'R10L': (0, 3), 'R10S': (1, 3), 'R28L': (2, 3), 'R28S': (3, 3), 'R5L': (4, 3), 'R5S': (5, 3), 'R23': (6, 3)}
+               'CC4': (0, 1), 'CC3': (1, 1), 'CC2': (2, 1), 'CC1': (3, 1), 'ED': (4, 1), 'DB': (5, 1), 'CB': (6, 1), 'AB2': (7, 1), 'BB5': (1, 2), 'BB4': (2, 2), 
+               'BB3': (3, 2), 'AA': (5, 2), 'R10L': (0, 3), 'R10S': (1, 3), 'R28L': (2, 3), 'R28S': (3, 3), 'R5L': (4, 3), 'R5S': (5, 3), 'R23': (6, 3)}
 
         elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] > 5]
         esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] <= 5]
@@ -82,48 +147,43 @@ class TaxiwayGraph:
         nx.draw_networkx_nodes(G, pos, nodelist=path_nodes, node_color='r')
         nx.draw_networkx_edges(G, pos, edgelist=path_edges, width=2, edge_color="r", style="solid")
 
-
         plt.title(f"Shortest Path from {start} to {finish}")
         plt.show()
 
 # Define vertices and edges for the first graph
-vertices1 = ['Gate 1', 'Gate 2', 'Gate 3', 'Gate 4', 'Gate 5', 'Gate 6', 'Gate 7', 'Gate 8',
-            'R10L', 'R10S', 'R28L', 'R28S', 'R5L', 'R5S', 'R23',
-            'CC4', 'CC3', 'CC2', 'CC1', 'BB5', 'BB4', 'ED', 'DB', 'CB', 'BB3', 'AB2', 'AA']
-
-edges1 = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10L', 'R10S', 1), ('CC3', 'CC2', 2),
-         ('CC2', 'CC1', 2), ('Gate 1', 'CC1', 2), ('CC1', 'CB', 2),
-         ('BB4', 'BB5', 1), ('BB5', 'R5L', 1), ('BB4', 'CB', 3), ('BB4', 'R5S', 1), ('R5L', 'R5S', 1), 
-         ('CB', 'BB3', 1), ('CB', 'DB', 1), ('NM', 'BB3', 1), ('AA', 'R28L', 1), ('AA', 'R28S', 1), ('R28L', 'R28S', 1),
-         ('AA', 'AB2', 3), ('Gate 6', 'AB2', 1), ('Gate 7', 'AB2', 1), ('Gate 8', 'R23', 1), ('R23', 'BB3', 5),
-         ('Gate 5', 'DB', 2), ('Gate 2', 'ED', 1), ('Gate 3', 'ED', 1), ('Gate 4', 'ED', 1), ('ED', 'DB', 2), ('BB3', 'AB2', 3),
-         ('R23', 'AB2', 2)]
-
-# Define vertices and edges for the second graph
 vertices = ['Gate 1', 'Gate 2', 'Gate 3', 'Gate 4', 'Gate 5', 'Gate 6', 'Gate 7', 'Gate 8',
             'R10L', 'R10S', 'R28L', 'R28S', 'R5L', 'R5S', 'R23',
             'CC4', 'CC3', 'CC2', 'CC1', 'BB5', 'BB4', 'ED', 'DB', 'CB', 'BB3', 'AB2', 'AA']
 
-edges = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10S', 'R10L', 1), ('CC3', 'CC2', 2),
+edges = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10L', 'R10S', 1), ('CC3', 'CC2', 2),
          ('CC2', 'CC1', 2), ('Gate 1', 'CC1', 2), ('CC1', 'CB', 2),
          ('BB4', 'BB5', 1), ('BB5', 'R5L', 1), ('BB4', 'CB', 3), ('BB4', 'R5S', 1), ('R5L', 'R5S', 1), 
-         ('CB', 'BB3', 1), ('CB', 'DB', 1), ('NM', 'BB3', 1), ('AA', 'R28L', 1), ('AA', 'R28S', 1), ('R28L', 'R28S', 1),
+         ('CB', 'BB3', 1), ('CB', 'DB', 1), ('AA', 'R28L', 1), ('AA', 'R28S', 1), ('R28L', 'R28S', 1),
          ('AA', 'AB2', 3), ('Gate 6', 'AB2', 1), ('Gate 7', 'AB2', 1), ('Gate 8', 'R23', 1), ('R23', 'BB3', 5),
          ('Gate 5', 'DB', 2), ('Gate 2', 'ED', 1), ('Gate 3', 'ED', 1), ('Gate 4', 'ED', 1), ('ED', 'DB', 2), ('BB3', 'AB2', 3),
          ('R23', 'AB2', 2)]
 
+
 start_gate = str(input("Enter the starting gate: "))
 end_runway = str(input("Enter the runway: "))
 
-# Create the TaxiwayGraph object
-taxiway_graph = TaxiwayGraph(vertices1, edges1)
-D = taxiway_graph.directed_expanded_graph()
-# taxiway_graph.print_graph(D)
-taxiway_graph.visualize_graph(D)
+# start_gate = 'Gate 3'
+# end_runway = 'R10L'
 
+# Create the TaxiwayGraph object
+taxiway_graph = TaxiwayGraph(vertices, edges)
+D = taxiway_graph.directed_expanded_graph()
+taxiway_graph.visualize_graph(D)
+taxiway_graph.undirected_graph(vertices, edges)
 
 # Find the shortest path from the starting gate to the runway
-shortest_path_flight = taxiway_graph.find_shortest_path_flight(start_gate, end_runway)
+shortest_path_flight, control_points = taxiway_graph.find_shortest_path_flight(start_gate, end_runway)
 print(f"The shortest path from {start_gate} to {end_runway} is: {shortest_path_flight}")
-
 taxiway_graph.create_and_visualize_graph_2(vertices, edges, start_gate, end_runway, shortest_path_flight)
+print(f"The control points are: {control_points}")
+
+tension = 0.2 # Adjust this parameter to control the tension of the spline
+detail_points = taxiway_graph.cardinal_spline(control_points, tension=tension)
+taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension)
+print(detail_points)
+
