@@ -175,18 +175,18 @@ end_runway = 'R10L'
 # Create the TaxiwayGraph object
 taxiway_graph = TaxiwayGraph(vertices, edges)
 D = taxiway_graph.directed_expanded_graph()
-taxiway_graph.visualize_graph(D)
-taxiway_graph.undirected_graph(vertices, edges, pos)
+# taxiway_graph.visualize_graph(D)
+# taxiway_graph.undirected_graph(vertices, edges, pos)
 
 # Find the shortest path from the starting gate to the runway
 shortest_path_flight, control_points = taxiway_graph.find_shortest_path_flight(start_gate, end_runway ,pos)
 print(f"The shortest path from {start_gate} to {end_runway} is: {shortest_path_flight}")
-taxiway_graph.create_and_visualize_graph_2(vertices, edges, start_gate, end_runway, shortest_path_flight, pos)
+# taxiway_graph.create_and_visualize_graph_2(vertices, edges, start_gate, end_runway, shortest_path_flight, pos)
 print(f"The control points are: {control_points}")
 
 tension = 0.25 # Adjust this parameter to control the tension of the spline
 detail_points, derivative_points = taxiway_graph.cardinal_spline(control_points, tension=tension)
-taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension)
+# taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension)
 print(detail_points)
 print(derivative_points)
 
