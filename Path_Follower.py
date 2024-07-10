@@ -34,8 +34,8 @@ class AircraftSimulation:
         #used to be 50
         self.stop = False
 
-        self.state_vector = np.array([[0], # X
-                                    [0],   # Y
+        self.state_vector = np.array([[self.x_dots[0]], # X
+                                    [self.y_dots[0]],   # Y
                                     [0],   # Vx
                                     [0],   # Vy
                                     [0],   # Psi
@@ -206,10 +206,10 @@ class AircraftSimulation:
 
     def plot_results_normal(self):
         t = np.arange(self.Tstart, self.Tstop + 1 * self.Ts, self.Ts)
-        t = t[:len(self.x_dots)]
+        # t = t[:len(self.x_dots)]
         # plt.xlim((10890, 10970))
         # plt.plot(self.x_pos,self.y_pos)
-        plt.plot(t,self.x_dots)
+        plt.plot(self.x_dots,self.y_dots)
         # plt.plot(t,self.y_pos)
         # plt.plot(t, self.psi)
         # plt.plot(t, self.psi_rate)
@@ -240,8 +240,8 @@ class AircraftSimulation:
             plt.title("Simulation of Simple Fixed-Winged Aircraft System with P Control")
             plt.xlabel('x')
             plt.ylabel('y')
-            plt.xlim((-.5, 3.25))
-            plt.ylim((-.5, 3.25))
+            plt.xlim((0, 2000))
+            plt.ylim((0, 1000))
             plt.grid()
 
 
@@ -261,9 +261,8 @@ class AircraftSimulation:
                             init_func=init_func,
                             interval=20)
 
-        anim.save('changed_force_to_10.mp4', dpi=150, fps = 30, writer='ffmpeg')
+        anim.save('testing_for_andy.mp4', dpi=150, fps = 30, writer='ffmpeg')
 
 # simulation = AircraftSimulation([[0,0],[1,-1],[2,-2],[3,-3]])
 # simulation.run_simulation()
 # simulation.plot_results_animated()
-
