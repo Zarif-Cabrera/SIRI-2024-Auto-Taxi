@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from path_follower import AircraftSimulation
 
 class TaxiwayGraph:
     def __init__(self, vertices, edges):
@@ -176,8 +177,8 @@ image = mpimg.imread('map.png') # Load the airport map image
 # start_gate = str(input("Enter the starting gate: "))
 # end_runway = str(input("Enter the runway: "))
 
-start_gate = 'R28L'
-end_runway = 'Gate 1'
+start_gate = 'Gate 1'
+end_runway = 'R10L'
 
 # Create the TaxiwayGraph object
 taxiway_graph = TaxiwayGraph(vertices, edges)
@@ -187,13 +188,16 @@ D = taxiway_graph.directed_expanded_graph()
 
 # Find the shortest path from the starting gate to the runway
 shortest_path_flight, control_points = taxiway_graph.find_shortest_path_flight(start_gate, end_runway ,pos)
-print(f"The shortest path from {start_gate} to {end_runway} is: {shortest_path_flight}")
+# print(f"The shortest path from {start_gate} to {end_runway} is: {shortest_path_flight}")
 # taxiway_graph.create_and_visualize_graph_2(vertices, edges, start_gate, end_runway, shortest_path_flight, pos, image)
 # print(f"The control points are: {control_points}")
 
 tension = 0.25 # Adjust this parameter to control the tension of the spline
 detail_points, derivative_points = taxiway_graph.cardinal_spline(control_points, tension=tension)
-taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension, image=image)
-print(detail_points)
-print(derivative_points)
+# taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension, image=image)
+# print(detail_points)
+# print(derivative_points)
 
+simulation = AircraftSimulation(detail_points)
+simulation.run_simulation()
+simulation.plot_results_animated()
