@@ -206,7 +206,7 @@ class AircraftSimulation:
 
     def plot_results_normal(self):
         t = np.arange(self.Tstart, self.Tstop + 1 * self.Ts, self.Ts)
-        t = t[:len(self.x_pos)]
+        t = t[:len(self.x_dots)]
         # plt.xlim((10890, 10970))
         # plt.plot(self.x_pos,self.y_pos)
         plt.plot(t,self.x_dots)
@@ -266,3 +266,4 @@ class AircraftSimulation:
 # simulation = AircraftSimulation([[0,0],[1,-1],[2,-2],[3,-3]])
 # simulation.run_simulation()
 # simulation.plot_results_animated()
+
