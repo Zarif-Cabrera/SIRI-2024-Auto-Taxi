@@ -21,7 +21,7 @@ pos = {'Gate 1': (1093, 579), 'Gate 2': (1234, 562), 'Gate 3': (1250, 661), 'Gat
         'CC4': (95, 670), 'CC3': (165, 668), 'CC2': (656, 589), 'CC1': (1090, 524), 'ED': (1304, 613), 'DB': (1393, 564), 'CB': (1320, 481), 'AB2': (1583, 611), 'BB5': (888, 99), 'BB4': (946, 149), 
         'BB3': (1370, 437), 'AA': (1717, 440), 'R10L': (71, 589), 'R10S': (155, 577), 'R28L': (1722, 323), 'R28S': (1652, 338), 'R5L': (927, 50), 'R5S': (989, 105), 'R23': (1734, 742), 'LK': (1355, 567)}
 
-image_raw = mpimg.imread("C:/Users/Zarif/Desktop/SIRI 2024 Practice/Fixed-Winged-Aircraft/map.png") # Load the airport map image
+image_raw = mpimg.imread("map.png") # Load the airport map image
 image = np.flipud(image_raw)
 
 def main():
