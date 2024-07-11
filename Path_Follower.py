@@ -187,23 +187,15 @@ class AircraftSimulation:
             
 
     def plot_results_normal(self):
-        t = np.arange(self.Tstart, self.Tstop + 1 * self.Ts, self.Ts)
-        # t = t[:len(self.x_pos)]
-        # t = t[:len(self.x_dots)]
-        # plt.plot(self.x_pos,self.y_pos)
-        plt.plot(self.x_dots,self.y_dots)
-        # plt.plot(t,self.y_pos)
-        # plt.plot(t, self.psi)
-        # plt.plot(t, self.psi_rate)
-        # plt.plot(t, self.Vx)
-        # plt.plot(t,self.Vy)
-        print(self.list_of_targets[-1],"last_one")
-        # print(self.state_vector,"vec")
-        # plt.plot(t,self.velocity)
-        plt.title("Snapshot of X-position")
-        # plt.legend(["X","Y"])
-        # plt.legend(["Psi", "Psi Rate"])
-        # plt.legend(["Vx", "Vy"])
+        image = mpimg.imread("C:/Users/Zarif/Desktop/SIRI 2024 Practice/Fixed-Winged-Aircraft/map.png")
+        plt.imshow(image)
+        plt.plot([self.list_of_targets[0][0],self.list_of_targets[-1][0]],[self.list_of_targets[0][1],self.list_of_targets[-1][1]],"bo")
+        plt.plot(self.x_pos,self.y_pos,color='r')
+        plt.title("Simulation of Simple Fixed-Winged Aircraft System with P Control")
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.xlim((0, 1900))
+        plt.ylim((0, 900))
         plt.grid()
         plt.show()
 
@@ -259,8 +251,4 @@ class AircraftSimulation:
                             interval=20)
 
         anim.save('arrow_of_path_traveled_smaller_time_step.mp4', dpi=150, fps = 30, writer='ffmpeg')
-
-# simulation = AircraftSimulation([[0,0],[1,-1],[2,-2],[3,-3]])
-# simulation.run_simulation()
-# simulation.plot_results_animated()
 
