@@ -9,14 +9,8 @@ import matplotlib.image as mpimg
 
 class AircraftSimulation:
     def __init__(self,waypoints):
-        # self.Iz = 15000  # aircraft moment of inertia (kgm^2) 
-        # self.m = 2182  # aircraft taxi weight (kg)
-        # self.f = 50
         self.Iz = 10  # aircraft moment of inertia (kgm^2) 
-        # moment of inertia is mass * 
         self.m = 1  # aircraft taxi weight (kg)
-        # self.f = 5
-        # self.list_of_targets = [[0,0],[1,1],[2,3],[3,6],[4,10],[5,15],[6,21],[7,28],[8,36],[9,45],[10,55]]
         self.list_of_targets = waypoints
         self.target_position = self.list_of_targets[1]
         self.x_dots = []
@@ -25,15 +19,12 @@ class AircraftSimulation:
             self.x_dots.append(x[0])
             self.y_dots.append(x[1])
         self.next = 1
-        # self.Kp = np.array([[1,1,1,1]])
         self.Kp_angle = 50
-        #used to be 50
         self.Kp_position = .001
         self.max_turn_rate = np.pi
         self.min_turn_rate = -np.pi
         self.max_f = 10
         self.min_f = -10
-        #used to be 50
         self.stop = False
 
         self.state_vector = np.array([[self.x_dots[0]], # X
@@ -42,11 +33,6 @@ class AircraftSimulation:
                                     [0],   # Vy
                                     [0],   # Psi
                                     [0]])  # Delta Psi
-        
-        # self.control_vector = np.array([[0],
-        #                                 [0],
-        #                                 [0],
-        #                                 [1/self.Iz]])
         
         # Simulation Parameters
         self.Ts = 0.01
@@ -109,7 +95,7 @@ class AircraftSimulation:
         if self.next < len(self.list_of_targets):
             end_x = self.list_of_targets[self.next][0]
             end_y = self.list_of_targets[self.next][1]
-            # print(end_x,end_y,"end")
+
             delta_x = end_x -  self.list_of_targets[self.next-1][0]
             delta_y = end_y -  self.list_of_targets[self.next-1][1]
             if delta_y == 0:
@@ -120,26 +106,30 @@ class AircraftSimulation:
                     return True
             else:
                 slope = -delta_x/delta_y 
-            # print(slope,"slope")
+
             b = end_y - (slope*end_x)
-            # print(b,"b")
-            # print((x,y),"x,y")
+
             if delta_y < 0:
                 if y <= ((slope*x) + b):
-                # print("True")
                     return True
                 else:
-                # print("False")
                     return False
             else:
                 if y >= ((slope*x) + b):
-                    # print("True")
                     return True
                 else:
-                    # print("False")
                     return False
     
     def run_simulation(self):
+
+        self.state_vector = np.array([[self.x_dots[0]], # X
+                                    [self.y_dots[0]],   # Y
+                                    [0],   # Vx
+                                    [0],   # Vy
+                                    [self.compute_angle(self.target_position[0] - self.state_vector[0][0], self.target_position[1] - self.state_vector[1][0])],   # Psi
+                                    [0]])
+
+        print(self.state_vector)
         for k in range(self.N + 1):
             if self.stop == True:
                 print("last waypoint")
@@ -148,21 +138,17 @@ class AircraftSimulation:
             y_distance = self.target_position[1] - self.state_vector[1][0]
 
             target_angle = self.compute_angle(x_distance,y_distance)
-            if k ==0:
+            if k == 0:
                 print(target_angle)
-                # print(target_angle)
             angle_error =  (target_angle - self.state_vector[4][0]) - self.state_vector[5][0]
 
             if y_distance == 0 :
                 distance = x_distance
-                # print("zero_y")
                 distance = distance - self.state_vector[2][0]
             elif x_distance == 0 :
-                # print("zero_x")
                 distance = y_distance
                 distance = distance - self.state_vector[3][0]
             elif self.find_waypoint_line(self.state_vector[0][0],self.state_vector[1][0]):
-                # print("passed",self.state_vector[0][0],self.state_vector[1][0])
                 self.state_vector = np.array([[self.state_vector[0][0]],
                                               [self.state_vector[1][0]],
                                               [0],
@@ -172,7 +158,6 @@ class AircraftSimulation:
                 if self.next < len(self.list_of_targets)-1:
                     self.next += 1
                     self.target_position = self.list_of_targets[self.next]
-                    # print(self.target_position)
                 elif self.next < len(self.list_of_targets):
                     self.target_position = self.list_of_targets[self.next]
                     self.stop = True
@@ -184,11 +169,6 @@ class AircraftSimulation:
                 if self.state_vector[2][0] < 0 or self.state_vector[3][0] < 0:
                     current_vel = - current_vel
                 distance = distance - current_vel
-
-
-                # v_desired = distance / self.Ts
-
-                # velocity_error = v_desired - (math.sqrt(self.state_vector[2][0]**2 + self.state_vector[3][0]**2))
 
             u = self.Kp_angle * angle_error
             u = max(self.min_turn_rate, min(self.max_turn_rate, u))
@@ -208,8 +188,8 @@ class AircraftSimulation:
 
     def plot_results_normal(self):
         t = np.arange(self.Tstart, self.Tstop + 1 * self.Ts, self.Ts)
+        # t = t[:len(self.x_pos)]
         # t = t[:len(self.x_dots)]
-        # plt.xlim((10890, 10970))
         # plt.plot(self.x_pos,self.y_pos)
         plt.plot(self.x_dots,self.y_dots)
         # plt.plot(t,self.y_pos)
@@ -233,8 +213,10 @@ class AircraftSimulation:
         fig = plt.figure()
         ax = plt.subplot(1, 1, 1)
 
-        data_skip = 150000
+        data_skip = 1500
         #150000
+
+        arrow = None
 
 
         def init_func():
@@ -250,14 +232,25 @@ class AircraftSimulation:
 
 
         def update_plot(i):
-            ax.plot([0,3,0,0],[0,1,1,3],"bo")
-            ax.plot(self.x_pos[i:i+data_skip], self.y_pos[i:i+data_skip], color='r')
 
-            # ax.scatter(self.x_pos[i], self.y_pos[i], marker='o', color='r')
+            nonlocal arrow  # Use nonlocal to modify arrow in nested scope
+            ax.clear()
+            init_func()  # Re-draw background and labels
+
+            if arrow:
+                arrow.remove()  # Remove previous arrow
+
+            if i+data_skip < len(self.x_pos):
+                current_x = self.x_pos[i+data_skip]
+                current_y = self.y_pos[i+data_skip]
+                current_vx = self.Vx[i+data_skip]
+                current_vy = self.Vy[i+data_skip]
+                arrow = ax.arrow(current_x, current_y, current_vx*self.Ts, current_vy*self.Ts, width=8, color='blue')  # Draw new arrow
+
+            ax.plot([self.list_of_targets[0][0],self.list_of_targets[-1][0]],[self.list_of_targets[0][1],self.list_of_targets[-1][1]],"bo")
+            ax.plot(self.x_pos[0:i+data_skip], self.y_pos[0:i+data_skip], color='r')
 
             print(i)
-
-
 
         anim = FuncAnimation(fig,
                             update_plot,
@@ -265,8 +258,9 @@ class AircraftSimulation:
                             init_func=init_func,
                             interval=20)
 
-        anim.save('testing_for_andy.mp4', dpi=150, fps = 30, writer='ffmpeg')
+        anim.save('arrow_of_path_traveled_smaller_time_step.mp4', dpi=150, fps = 30, writer='ffmpeg')
 
 # simulation = AircraftSimulation([[0,0],[1,-1],[2,-2],[3,-3]])
 # simulation.run_simulation()
 # simulation.plot_results_animated()
+
