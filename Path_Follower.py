@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from matplotlib.animation import FuncAnimation
+import matplotlib.image as mpimg
+
 
 # to do list, add bounds to turning, make deceleration function
 
@@ -238,10 +240,12 @@ class AircraftSimulation:
         def init_func():
             ax.clear()
             plt.title("Simulation of Simple Fixed-Winged Aircraft System with P Control")
+            image = mpimg.imread("C:/Users/Zarif/Desktop/SIRI 2024 Practice/Fixed-Winged-Aircraft/map.png")
+            plt.imshow(image)
             plt.xlabel('x')
             plt.ylabel('y')
-            plt.xlim((0, 2000))
-            plt.ylim((0, 1000))
+            plt.xlim((0, 1900))
+            plt.ylim((0, 900))
             plt.grid()
 
 
