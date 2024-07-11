@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from path_follower import AircraftSimulation
+# from path_follower import AircraftSimulation
 
 class TaxiwayGraph:
     def __init__(self, vertices, edges):
