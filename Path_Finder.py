@@ -59,6 +59,7 @@ class TaxiwayGraph:
         # nodes and edges
         plt.figure(figsize=(12, 8))
         plt.imshow(image)
+        plt.gca().invert_yaxis()
         nx.draw_networkx_nodes(G, pos, node_size=200)
         nx.draw_networkx_edges(G, pos, edgelist=elarge, width=2)
         nx.draw_networkx_edges(G, pos, edgelist=esmall, width=2, alpha=0.5, edge_color="b", style="solid")
@@ -86,6 +87,7 @@ class TaxiwayGraph:
 
         plt.figure(figsize=(12, 8))
         plt.imshow(image)
+        plt.gca().invert_yaxis()
         nx.draw_networkx_nodes(G, pos, node_size=200)
         nx.draw_networkx_edges(G, pos, edgelist=elarge, width=2)
         nx.draw_networkx_edges(G, pos, edgelist=esmall, width=2, alpha=0.5, edge_color="b", style="solid")
@@ -143,9 +145,9 @@ class TaxiwayGraph:
         spline_curve, derivative_points = self.cardinal_spline(points, tension=tension)
         plt.figure(figsize=(12, 8))
         plt.imshow(image)
+        plt.gca().invert_yaxis() 
         # Plot control points
         plt.plot(points[:, 0], points[:, 1], 'ro-', label='Waypoints')
-
         # Plot spline curve
         plt.plot(spline_curve[:, 0], spline_curve[:, 1], 'b-', label='Cardinal Spline')
         plt.legend()
@@ -167,11 +169,13 @@ edges = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10L', 'R1
          ('Gate 8', 'R23', 1), ('R23', 'BB3', 5), ('Gate 5', 'DB', 2), ('Gate 2', 'ED', 1), ('Gate 3', 'ED', 1), 
          ('Gate 4', 'ED', 1), ('ED', 'LK', 1), ('LK', 'DB', 1), ('BB3', 'AB2', 3), ('R23', 'AB2', 2)]
 
-pos = {'Gate 1': (1100, 300), 'Gate 2': (1230, 320), 'Gate 3': (1250, 215), 'Gate 4': (1340, 230), 'Gate 5': (1390, 247), 'Gate 6': (1510, 176), 'Gate 7': (1573, 176), 'Gate 8': (1646, 169),
-        'CC4': (95, 210), 'CC3': (165, 215), 'CC2': (656, 290), 'CC1': (1090, 355), 'ED': (1304, 264), 'DB': (1393, 312), 'CB': (1320, 396), 'AB2': (1567, 241), 'BB5': (887, 777), 'BB4': (946, 728), 
-        'BB3': (1369, 447), 'AA': (1717, 440), 'R10L': (78, 290), 'R10S': (155, 303), 'R28L': (1722, 556), 'R28S': (1652, 541), 'R5L': (927, 825), 'R5S': (989, 771), 'R23': (1734, 135), 'LK': (1354, 310)}
+pos = {'Gate 1': (1093, 579), 'Gate 2': (1234, 562), 'Gate 3': (1250, 661), 'Gate 4': (1340, 647), 'Gate 5': (1394, 638), 'Gate 6': (1510, 706), 'Gate 7': (1573, 701), 'Gate 8': (1646, 699),
+        'CC4': (95, 670), 'CC3': (165, 668), 'CC2': (656, 589), 'CC1': (1090, 524), 'ED': (1304, 613), 'DB': (1393, 564), 'CB': (1320, 481), 'AB2': (1583, 611), 'BB5': (888, 99), 'BB4': (946, 149), 
+        'BB3': (1370, 437), 'AA': (1717, 440), 'R10L': (71, 589), 'R10S': (155, 577), 'R28L': (1722, 323), 'R28S': (1652, 338), 'R5L': (927, 50), 'R5S': (989, 105), 'R23': (1734, 742), 'LK': (1355, 567)}
 
-image = mpimg.imread('map.png') # Load the airport map image
+image_raw = mpimg.imread('map.png') # Load the airport map image
+image = np.flipud(image_raw)
+
 
 # start_gate = str(input("Enter the starting gate: "))
 # end_runway = str(input("Enter the runway: "))
