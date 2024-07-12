@@ -2,17 +2,61 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-# from path_follower import AircraftSimulation
+import math 
+import pandas as pd
+from path_follower import AircraftSimulation
 
 class TaxiwayGraph:
-    def __init__(self, vertices, edges):
-        self.edges = edges
-        self.vertices = vertices
+    def __init__(self, csv_file_path, image_path):
+        # Read data from CSV file
+        self.data = pd.read_csv(csv_file_path)
+        self.data.set_index('Name', inplace=True)
+        
+        # Initialize lists for vertices and edges
+        self.pos = []
+        self.vertices = []
+        self.edges = []
+        
+        # Process the data
+        self.process_data()
+
+        # Create the graph
         self.G = nx.Graph()
-        self.G.add_nodes_from(vertices)
-        for u, v, weight in edges:
+        self.G.add_nodes_from(self.vertices)
+        for u, v, weight in self.edges:
             self.G.add_edge(u, v, weight=weight)
-            # self.G.add_edge(u, v, tdg=tdg, name=f"Taxiway {u}-{v}")
+
+        # Set up the position dictionary for visualization
+        self.pos_dict = {label: (x, y) for label, x, y in self.pos}
+        self.ordered_pos_dict = {label: self.pos_dict[label] for label in self.vertices}
+        
+        # Load the airport map image
+        self.image_raw = mpimg.imread(image_path)  # Load the airport map image
+        self.image = np.flipud(self.image_raw)     # Flip the image for correct orientation
+
+    def process_data(self):
+        length = len(self.data)
+
+        for i in range(length):
+            name = self.data.index[i]
+            x_value = int(self.data.loc[name, 'Longitude (x)'])
+            y_value = int(self.data.loc[name, 'Latitude (y)'])
+            self.pos.append((name, x_value, y_value))
+            self.vertices.append(name)
+
+        for i in range(length):
+            name = self.data.index[i]
+            connection = self.data.loc[name, 'Connection']
+            connection = [c.strip() for c in connection.split(',') if c.strip()]  # Strip whitespace and filter out empty strings
+            for conn in connection:
+                if conn in self.vertices:
+                    # Get position index for the connection
+                    idx = self.vertices.index(conn)
+                    # Compute the Euclidean distance between positions
+                    weight = math.sqrt((self.pos[i][1] - self.pos[idx][1])**2 + (self.pos[i][2] - self.pos[idx][2])**2)
+                    self.edges.append((name, conn, weight))
+                else:
+                    print(f"Warning: Connection '{conn}' not found in vertices.")
 
     def directed_expanded_graph(self):
         D = nx.DiGraph()
@@ -47,10 +91,10 @@ class TaxiwayGraph:
         plt.title("Directed Expanded Graph")
         plt.show()
     
-    def undirected_graph(self, vertices, edges, pos, image):
+    def undirected_graph(self, image, pos):
         G = nx.Graph()
-        G.add_nodes_from(vertices)
-        G.add_weighted_edges_from(edges)
+        G.add_nodes_from(self.vertices)
+        G.add_weighted_edges_from(self.edges)
 
         # Draw the graph
         elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] > 5]
@@ -70,38 +114,37 @@ class TaxiwayGraph:
         plt.title("Undirected Graph")
         plt.show()
 
-    def find_shortest_path_flight(self, start_vertex, end_vertex, pos):
+    def find_shortest_path_flight(self, start_vertex, end_vertex):
+        if start_vertex not in self.G or end_vertex not in self.G:
+            raise ValueError(f"One or both vertices '{start_vertex}' and '{end_vertex}' are not in the graph.")
         distance = nx.dijkstra_path(self.G, start_vertex, end_vertex, weight='weight')
         control_points = []
         for i in range(len(distance)):
-            control_points.append(pos[distance[i]])
+            control_points.append(self.pos_dict[distance[i]])
         return distance, control_points
 
-    def create_and_visualize_graph_2(self, vertices, edges, start, finish, shortest_path_flight, pos, image):
+    def create_and_visualize_graph_2(self, start, finish, shortest_path_flight):
         G = nx.DiGraph()
-        G.add_nodes_from(vertices)
-        G.add_weighted_edges_from(edges)
+        G.add_nodes_from(self.vertices)
+        G.add_weighted_edges_from(self.edges)
 
         elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] > 5]
         esmall = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] <= 5]
 
         plt.figure(figsize=(12, 8))
-        plt.imshow(image)
+        plt.imshow(self.image)
         plt.gca().invert_yaxis()
-        nx.draw_networkx_nodes(G, pos, node_size=200)
-        nx.draw_networkx_edges(G, pos, edgelist=elarge, width=2)
-        nx.draw_networkx_edges(G, pos, edgelist=esmall, width=2, alpha=0.5, edge_color="b", style="solid")
-        nx.draw_networkx_labels(G, pos, font_size=5, font_family="sans-serif")
-
-        # edge_labels = {(u, v): f"{d['weight']}" for u, v, d in G.edges(data=True)}
-        # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+        nx.draw_networkx_nodes(G, self.pos_dict, node_size=200)
+        nx.draw_networkx_edges(G, self.pos_dict, edgelist=elarge, width=2)
+        nx.draw_networkx_edges(G, self.pos_dict, edgelist=esmall, width=2, alpha=0.5, edge_color="b", style="solid")
+        nx.draw_networkx_labels(G, self.pos_dict, font_size=5, font_family="sans-serif")
 
         # Draw the shortest path nodes and edges
         path_nodes = shortest_path_flight
         path_edges = list(zip(shortest_path_flight, shortest_path_flight[1:]))
 
-        nx.draw_networkx_nodes(G, pos, nodelist=path_nodes, node_color='r')
-        nx.draw_networkx_edges(G, pos, edgelist=path_edges, width=2, edge_color="r", style="solid")
+        nx.draw_networkx_nodes(G, self.pos_dict, nodelist=path_nodes, node_color='r')
+        nx.draw_networkx_edges(G, self.pos_dict, edgelist=path_edges, width=2, edge_color="r", style="solid")
 
         plt.title(f"Shortest Path from {start} to {finish}")
         plt.show()
@@ -119,32 +162,33 @@ class TaxiwayGraph:
             t2 = t * t
             return ((6 * t2 - 6 * t) * p1 + (3 * t2 - 4 * t + 1) * tj(0, p0, p2) +(-6 * t2 + 6 * t) * p2 + (3 * t2 - 2 * t) * tj(0, p1, p3))
 
-        n = len(control_points)
-        points = []
+        n = len(points)
+        spline_points = []
         derivatives = []
 
         for i in range(n - 1):
-            p0 = control_points[i - 1] if i > 0 else control_points[i]
-            p1 = control_points[i]
-            p2 = control_points[i + 1]
-            p3 = control_points[i + 2] if i < n - 2 else control_points[i + 1]
+            p0 = points[i - 1] if i > 0 else points[i]
+            p1 = points[i]
+            p2 = points[i + 1]
+            p3 = points[i + 2] if i + 2 < n else points[i + 1]
 
-            for t in np.linspace(0, 1, num_points, endpoint=False):
+            for j in range(num_points):
+                t = j / (num_points - 1)
                 x = interpolate(p0[0], p1[0], p2[0], p3[0], t)
                 y = interpolate(p0[1], p1[1], p2[1], p3[1], t)
                 dx = interpolate_derivative(p0[0], p1[0], p2[0], p3[0], t)
                 dy = interpolate_derivative(p0[1], p1[1], p2[1], p3[1], t)
-                points.append((x, y))
+                spline_points.append((x, y))
                 derivatives.append((dx, dy))
 
-        points.append(control_points[-1])
+        spline_points.append(points[-1])
         derivatives.append((0, 0))  # Derivative at the last point can be approximated as zero
-        return np.array(points), np.array(derivatives)
+        return np.array(spline_points), np.array(derivatives)
     
-    def visualize_cardinal_spline(self, points, tension=0.5, image=None):
+    def visualize_cardinal_spline(self, points, tension=0.5):
         spline_curve, derivative_points = self.cardinal_spline(points, tension=tension)
         plt.figure(figsize=(12, 8))
-        plt.imshow(image)
+        plt.imshow(self.image)
         plt.gca().invert_yaxis() 
         # Plot control points
         plt.plot(points[:, 0], points[:, 1], 'ro-', label='Waypoints')
@@ -156,51 +200,37 @@ class TaxiwayGraph:
         plt.ylabel('Y')
         plt.show()
 
+# Define the path to the CSV file and the image file
+csv_file_path = r"D:\code\Position_of_Airport.csv"
+image_path = 'map.png'
 
-# Define vertices and edges for the first graph
-vertices = ['Gate 1', 'Gate 2', 'Gate 3', 'Gate 4', 'Gate 5', 'Gate 6', 'Gate 7', 'Gate 8',
-            'R10L', 'R10S', 'R28L', 'R28S', 'R5L', 'R5S', 'R23', 
-            'CC4', 'CC3', 'CC2', 'CC1', 'BB5', 'BB4', 'ED', 'DB', 'CB', 'BB3', 'AB2', 'AA', 'LK']
+# Create the TaxiwayGraph object
+taxiway_graph = TaxiwayGraph(csv_file_path, image_path)
 
-edges = [('CC4', 'CC3', 1), ('CC4', 'R10L', 1), ('CC3', 'R10S', 1), ('R10L', 'R10S', 1), ('CC3', 'CC2', 2),
-         ('CC2', 'CC1', 2), ('Gate 1', 'CC1', 2), ('CC1', 'CB', 2), ('BB4', 'BB5', 1), ('BB5', 'R5L', 1), 
-         ('BB4', 'CB', 3), ('BB4', 'R5S', 1), ('R5L', 'R5S', 1), ('CB', 'BB3', 1), ('CB', 'DB', 1), ('AA', 'R28L', 1),
-         ('AA', 'R28S', 1), ('R28L', 'R28S', 1), ('AA', 'AB2', 3), ('Gate 6', 'AB2', 1), ('Gate 7', 'AB2', 1), 
-         ('Gate 8', 'R23', 1), ('R23', 'BB3', 5), ('Gate 5', 'DB', 2), ('Gate 2', 'ED', 1), ('Gate 3', 'ED', 1), 
-         ('Gate 4', 'ED', 1), ('ED', 'LK', 1), ('LK', 'DB', 1), ('BB3', 'AB2', 3), ('R23', 'AB2', 2)]
-
-pos = {'Gate 1': (1093, 579), 'Gate 2': (1234, 562), 'Gate 3': (1250, 661), 'Gate 4': (1340, 647), 'Gate 5': (1394, 638), 'Gate 6': (1510, 706), 'Gate 7': (1573, 701), 'Gate 8': (1646, 699),
-        'CC4': (95, 670), 'CC3': (165, 668), 'CC2': (656, 589), 'CC1': (1090, 524), 'ED': (1304, 613), 'DB': (1393, 564), 'CB': (1320, 481), 'AB2': (1583, 611), 'BB5': (888, 99), 'BB4': (946, 149), 
-        'BB3': (1370, 437), 'AA': (1717, 440), 'R10L': (71, 589), 'R10S': (155, 577), 'R28L': (1722, 323), 'R28S': (1652, 338), 'R5L': (927, 50), 'R5S': (989, 105), 'R23': (1734, 742), 'LK': (1355, 567)}
-
-image_raw = mpimg.imread('map.png') # Load the airport map image
-image = np.flipud(image_raw)
-
+# Generate the directed expanded graph
+D = taxiway_graph.directed_expanded_graph()
 
 # start_gate = str(input("Enter the starting gate: "))
 # end_runway = str(input("Enter the runway: "))
 
+# Define the start and end gates
 start_gate = 'Gate 1'
 end_runway = 'R10L'
 
-# Create the TaxiwayGraph object
-taxiway_graph = TaxiwayGraph(vertices, edges)
-D = taxiway_graph.directed_expanded_graph()
-# taxiway_graph.directed_graph(D)
-# taxiway_graph.undirected_graph(vertices, edges, pos, image)
-
 # Find the shortest path from the starting gate to the runway
-shortest_path_flight, control_points = taxiway_graph.find_shortest_path_flight(start_gate, end_runway ,pos)
-# print(f"The shortest path from {start_gate} to {end_runway} is: {shortest_path_flight}")
-# taxiway_graph.create_and_visualize_graph_2(vertices, edges, start_gate, end_runway, shortest_path_flight, pos, image)
-# print(f"The control points are: {control_points}")
+shortest_path_flight, control_points = taxiway_graph.find_shortest_path_flight(start_gate, end_runway)
 
-tension = 0.25 # Adjust this parameter to control the tension of the spline
+# Compute the cardinal spline
+tension = 0  # Adjust this parameter to control the tension of the spline
 detail_points, derivative_points = taxiway_graph.cardinal_spline(control_points, tension=tension)
-# taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension, image=image)
-# print(detail_points)
-# print(derivative_points)
 
-simulation = AircraftSimulation(detail_points)
-simulation.run_simulation()
-simulation.plot_results_animated()
+# Uncomment the following lines if you want to visualize the graphs
+taxiway_graph.undirected_graph(taxiway_graph.image, taxiway_graph.ordered_pos_dict)
+taxiway_graph.directed_graph(D)
+taxiway_graph.create_and_visualize_graph_2(start_gate, end_runway, shortest_path_flight)
+taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension)
+
+# Define the AircraftSimulation class (assuming you have this defined somewhere)
+# simulation = AircraftSimulation(detail_points)
+# simulation.run_simulation()
+# simulation.plot_results_animated()
