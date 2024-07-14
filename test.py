@@ -31,7 +31,8 @@ def main():
     end_runway = 'R10L'
 
     shortest_path_flight, control_points = taxiway_graph.find_shortest_path_flight(start_gate, end_runway ,pos)
-    tension = 0.25 # Adjust this parameter to control the tension of the spline
+    # this makes it sharper
+    tension = .8 # Adjust this parameter to control the tension of the spline
     detail_points, derivative_points = taxiway_graph.cardinal_spline(control_points, tension=tension)
 
     simulation = AircraftSimulation(detail_points)
