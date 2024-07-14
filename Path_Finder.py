@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import math 
 import pandas as pd
-from path_follower import AircraftSimulation
+from Path_Follower import AircraftSimulation
 
 class TaxiwayGraph:
     def __init__(self, csv_file_path, image_path):
