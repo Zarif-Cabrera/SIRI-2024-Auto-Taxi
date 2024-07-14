@@ -19,8 +19,12 @@ class AircraftSimulation:
             self.x_dots.append(x[0])
             self.y_dots.append(x[1])
         self.next = 1
-        self.Kp_angle = 50
-        self.Kp_position = .001
+        self.Kp_angle = 100
+        self.Kp_position = .00000001
+        # .00001
+        self.Ki_position = .00000001 # smaller, this is, the longer it takes, but more accurate
+        self.integral_position = 0
+        self.distance_error = 0
         self.max_turn_rate = np.pi
         self.min_turn_rate = -np.pi
         self.max_f = 10
@@ -37,7 +41,7 @@ class AircraftSimulation:
         # Simulation Parameters
         self.Ts = 0.01
         self.Tstart = 0
-        self.Tstop = 150000
+        self.Tstop = 150000 # keep this same at 600
         self.N = int((self.Tstop - self.Tstart) / self.Ts)  # Simulation Length  
 
         self.x_pos = []
@@ -129,7 +133,6 @@ class AircraftSimulation:
                                     [self.compute_angle(self.target_position[0] - self.state_vector[0][0], self.target_position[1] - self.state_vector[1][0])],   # Psi
                                     [0]])
 
-        print(self.state_vector)
         for k in range(self.N + 1):
             if self.stop == True:
                 print("last waypoint")
@@ -166,13 +169,15 @@ class AircraftSimulation:
                 distance = math.sqrt(x_distance**2 + y_distance**2)
 
                 current_vel = (math.sqrt(self.state_vector[2][0]**2 + self.state_vector[3][0]**2))
-                if self.state_vector[2][0] < 0 or self.state_vector[3][0] < 0:
+                if self.state_vector[2][0] < 0 or self.state_vector[3][0] < 0: # take this out 
                     current_vel = - current_vel
                 distance = distance - current_vel
 
             u = self.Kp_angle * angle_error
             u = max(self.min_turn_rate, min(self.max_turn_rate, u))
-            f = distance * self.Kp_position
+            self.distance_error += abs(distance)
+            self.integral_position += distance * self.Ts
+            f = (distance * self.Kp_position) + (self.integral_position * self.Ki_position)
             f = max(self.min_f, min(self.max_f, f))
             
             self.state_vector  = self.step_lat(self.state_vector,u,f) 
@@ -187,10 +192,14 @@ class AircraftSimulation:
             
 
     def plot_results_normal(self):
-        image = mpimg.imread("C:/Users/Zarif/Desktop/SIRI 2024 Practice/Fixed-Winged-Aircraft/map.png")
+        # print(len(self.x_dots),"how_many_waypoints")
+        # print(len(self.x_pos),"how_many_steps")
+        plt.plot(self.x_pos,self.y_pos,color='r')
+        # print(self.distance_error/len(self.x_pos),"average_error")
+        # plt.plot(self.x_dots,self.y_dots,"bo")
+        image = mpimg.imread("map.png")
         plt.imshow(image)
         plt.plot([self.list_of_targets[0][0],self.list_of_targets[-1][0]],[self.list_of_targets[0][1],self.list_of_targets[-1][1]],"bo")
-        plt.plot(self.x_pos,self.y_pos,color='r')
         plt.title("Simulation of Simple Fixed-Winged Aircraft System with P Control")
         plt.xlabel('x')
         plt.ylabel('y')
@@ -199,13 +208,14 @@ class AircraftSimulation:
         plt.grid()
         plt.show()
 
+
     def plot_results_animated(self):
         t = np.arange(self.Tstart, self.Tstop + 1 * self.Ts, self.Ts)
 
         fig = plt.figure()
         ax = plt.subplot(1, 1, 1)
 
-        data_skip = 1500
+        data_skip = 150000
         #150000
 
         arrow = None
@@ -214,7 +224,7 @@ class AircraftSimulation:
         def init_func():
             ax.clear()
             plt.title("Simulation of Simple Fixed-Winged Aircraft System with P Control")
-            image = mpimg.imread("C:/Users/Zarif/Desktop/SIRI 2024 Practice/Fixed-Winged-Aircraft/map.png")
+            image = mpimg.imread("map.png")
             plt.imshow(image)
             plt.xlabel('x')
             plt.ylabel('y')
@@ -250,5 +260,6 @@ class AircraftSimulation:
                             init_func=init_func,
                             interval=20)
 
-        anim.save('arrow_of_path_traveled_smaller_time_step.mp4', dpi=150, fps = 30, writer='ffmpeg')
+        anim.save('airplane_path.mp4', dpi=150, fps = 30, writer='ffmpeg')
+
 
