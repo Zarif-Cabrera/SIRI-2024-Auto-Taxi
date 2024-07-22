@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import math 
 import pandas as pd
-from Path_Follower import AircraftSimulation
 
 class TaxiwayGraph:
     def __init__(self, csv_file_path, image_path):
@@ -122,7 +121,7 @@ class TaxiwayGraph:
         for i in range(len(distance)):
             control_points.append(self.pos_dict[distance[i]])
         return distance, control_points
-
+    
     def create_and_visualize_graph_2(self, start, finish, shortest_path_flight):
         G = nx.DiGraph()
         G.add_nodes_from(self.vertices)
@@ -149,60 +148,10 @@ class TaxiwayGraph:
         plt.title(f"Shortest Path from {start} to {finish}")
         plt.show()
 
-    def cardinal_spline(self, points, num_points=100, tension=0.5):
-        def tj(ti, pi, pj):
-            return ((1 - tension) / 2) * (pj - pi)
-
-        def interpolate(p0, p1, p2, p3, t):
-            t2 = t * t
-            t3 = t2 * t
-            return ((2 * t3 - 3 * t2 + 1) * p1 + (t3 - 2 * t2 + t) * tj(0, p0, p2) + (-2 * t3 + 3 * t2) * p2 + (t3 - t2) * tj(0, p1, p3))
-
-        def interpolate_derivative(p0, p1, p2, p3, t):
-            t2 = t * t
-            return ((6 * t2 - 6 * t) * p1 + (3 * t2 - 4 * t + 1) * tj(0, p0, p2) +(-6 * t2 + 6 * t) * p2 + (3 * t2 - 2 * t) * tj(0, p1, p3))
-
-        n = len(points)
-        spline_points = []
-        derivatives = []
-
-        for i in range(n - 1):
-            p0 = points[i - 1] if i > 0 else points[i]
-            p1 = points[i]
-            p2 = points[i + 1]
-            p3 = points[i + 2] if i + 2 < n else points[i + 1]
-
-            for j in range(num_points):
-                t = j / (num_points - 1)
-                x = interpolate(p0[0], p1[0], p2[0], p3[0], t)
-                y = interpolate(p0[1], p1[1], p2[1], p3[1], t)
-                dx = interpolate_derivative(p0[0], p1[0], p2[0], p3[0], t)
-                dy = interpolate_derivative(p0[1], p1[1], p2[1], p3[1], t)
-                spline_points.append((x, y))
-                derivatives.append((dx, dy))
-
-        spline_points.append(points[-1])
-        derivatives.append((0, 0))  # Derivative at the last point can be approximated as zero
-        return np.array(spline_points), np.array(derivatives)
-    
-    def visualize_cardinal_spline(self, points, tension=0.5):
-        spline_curve, derivative_points = self.cardinal_spline(points, tension=tension)
-        plt.figure(figsize=(12, 8))
-        plt.imshow(self.image)
-        plt.gca().invert_yaxis() 
-        # Plot control points
-        plt.plot(points[:, 0], points[:, 1], 'ro-', label='Waypoints')
-        # Plot spline curve
-        plt.plot(spline_curve[:, 0], spline_curve[:, 1], 'b-', label='Cardinal Spline')
-        plt.legend()
-        plt.title(f'Cardinal Spline Interpolation with Tension = {tension}')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.show()
 
 if __name__ == '__main__':
     # Define the path to the CSV file and the image file
-    csv_file_path = r".\Position_of_Airport.csv"
+    csv_file_path = r"../data/Position_of_Airport.csv"
     image_path = 'map.png'
 
     # Create the TaxiwayGraph object
@@ -210,9 +159,6 @@ if __name__ == '__main__':
 
     # Generate the directed expanded graph
     D = taxiway_graph.directed_expanded_graph()
-
-    # start_gate = str(input("Enter the starting gate: "))
-    # end_runway = str(input("Enter the runway: "))
 
     # Define the start and end gates
     start_gate = 'Gate 1'
@@ -225,13 +171,6 @@ if __name__ == '__main__':
     tension = 0  # Adjust this parameter to control the tension of the spline
     detail_points, derivative_points = taxiway_graph.cardinal_spline(control_points, tension=tension)
 
-    # Uncomment the following lines if you want to visualize the graphs
     taxiway_graph.undirected_graph(taxiway_graph.image, taxiway_graph.ordered_pos_dict)
     taxiway_graph.directed_graph(D)
     taxiway_graph.create_and_visualize_graph_2(start_gate, end_runway, shortest_path_flight)
-    taxiway_graph.visualize_cardinal_spline(detail_points, tension=tension)
-
-    # Define the AircraftSimulation class (assuming you have this defined somewhere)
-    # simulation = AircraftSimulation(detail_points)
-    # simulation.run_simulation()
-    # simulation.plot_results_animated()
